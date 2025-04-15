@@ -1,10 +1,28 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Instala dependências do sistema necessárias para o Chrome
-RUN apt-get update && apt-get install -y wget unzip gnupg2 \
-    && wget -q -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && dpkg -i google-chrome.deb || apt-get -f install -y \
-    && rm google-chrome.deb
+# Instala ferramentas básicas e dependências do ChromeDriver
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Instala o ChromeDriver
 RUN CHROME_DRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
@@ -14,12 +32,18 @@ RUN CHROME_DRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_
     chmod +x /usr/bin/chromedriver && \
     rm chromedriver_linux64.zip
 
+# Diretório da aplicação
 WORKDIR /app
-COPY . /app
 
+# Copia os arquivos do projeto
+COPY . .
+
+# Instala dependências do projeto
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Render passa a porta via variável de ambiente, por isso configure dessa forma:
-EXPOSE $PORT
+# Expõe a porta 5000 (caso use Flask)
+EXPOSE 5000
 
+# Comando para iniciar o app
 CMD ["python", "app.py"]
+
