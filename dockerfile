@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Instala ferramentas básicas e dependências do ChromeDriver
+# Instala ferramentas básicas e dependências
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
@@ -24,13 +24,18 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# Instala o ChromeDriver
-RUN CHROME_DRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
-    wget -q "https://chromedriver.storage.googleapis.com/${CHROME_DRIVER_VERSION}/chromedriver_linux64.zip" && \
-    unzip chromedriver_linux64.zip && \
-    mv chromedriver /usr/bin/chromedriver && \
+# Adiciona a chave e o repositório do Google Chrome
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# Baixa e instala o ChromeDriver a partir do caminho solicitado
+RUN wget -q -O chromedriver-linux64.zip "https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.95/linux64/chromedriver-linux64.zip" && \
+    unzip chromedriver-linux64.zip && \
+    mv chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
     chmod +x /usr/bin/chromedriver && \
-    rm chromedriver_linux64.zip
+    rm -rf chromedriver-linux64* 
 
 # Diretório da aplicação
 WORKDIR /app
@@ -41,9 +46,8 @@ COPY . .
 # Instala dependências do projeto
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expõe a porta 5000 (caso use Flask)
 EXPOSE 5000
 
-# Comando para iniciar o app
 CMD ["python", "app.py"]
+
 
